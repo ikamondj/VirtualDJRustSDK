@@ -81,6 +81,28 @@ impl DspPlugin for GainPlugin {
     }
 }
 
+fn main() {
+    println!("VirtualDJ Rust SDK - Simple Gain Plugin Example");
+    println!("This example demonstrates a basic DSP plugin structure.");
+    
+    let mut plugin = GainPlugin::new();
+    if let Ok(()) = plugin.on_load() {
+        println!("✓ Plugin loaded successfully");
+    }
+    
+    let info = plugin.get_info();
+    println!("\nPlugin Information:");
+    println!("  Name: {}", info.name);
+    println!("  Author: {}", info.author);
+    println!("  Description: {}", info.description);
+    println!("  Version: {}", info.version);
+    
+    println!("\nTo use this plugin in a real project:");
+    println!("1. Implement DspPlugin trait methods for your audio processing");
+    println!("2. Compile with: cargo build --release");
+    println!("3. Deploy the resulting DLL to VirtualDJ's plugin directory");
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

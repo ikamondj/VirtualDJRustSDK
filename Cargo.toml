@@ -2,9 +2,13 @@
 name = "virtualdj-plugin-sdk"
 version = "0.1.0"
 edition = "2021"
-authors = ["VirtualDJ Plugin SDK Contributors"]
+authors = ["Thomas Landman"]
 description = "Rust bindings for the VirtualDJ Plugin SDK"
 license = "MIT OR Apache-2.0"
+repository = "https://github.com/ikamondj/VirtualDJRustSDK"
+readme = "README.md"
+keywords = ["virtualdj", "plugin", "sdk", "audio", "dj"]
+categories = ["multimedia::audio"]
 
 [dependencies]
 
