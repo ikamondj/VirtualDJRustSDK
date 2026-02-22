@@ -84,6 +84,36 @@ impl StateQueryPlugin {
     }
 }
 
+fn main() {
+    println!("VirtualDJ State Query Example");
+    println!("=============================\n");
+    println!("This example demonstrates how to use PluginContext to query VirtualDJ state.");
+    println!("In a real plugin, you would use this pattern in your plugin callbacks.\n");
+    
+    println!("Example usage patterns:\n");
+    
+    println!("1. Query track information:");
+    println!("   let title = context.get_info_string(\"deck 1 get_title\")?;");
+    println!("   let position = context.get_info_double(\"deck 1 get_position\")?;\n");
+    
+    println!("2. Query cue information:");
+    println!("   let has_cue = context.get_info_string(\"deck 1 has_cue 1\")?;");
+    println!("   let cue_pos = context.get_info_double(\"deck 1 cue_pos 1\")?;\n");
+    
+    println!("3. Send commands:");
+    println!("   context.send_command(\"deck 1 play\")?;");
+    println!("   context.send_command(\"mixer master volume 50\")?;\n");
+    
+    println!("Note: This example is a reference. To use PluginContext:");
+    println!("- You need a valid VirtualDJ plugin pointer");
+    println!("- You need access to the VdjCallbacks struct");
+    println!("- Typically this is done within your plugin's on_load() or other callbacks\n");
+    
+    let plugin = StateQueryPlugin::new();
+    let info = plugin.get_info();
+    println!("Plugin: {} v{}", info.name, info.version);
+}
+
 impl PluginBase for StateQueryPlugin {
     fn on_load(&mut self) -> Result<()> {
         println!("State Query Plugin loaded!");
