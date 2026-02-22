@@ -116,6 +116,86 @@ impl DspPlugin for MyEffect {
 - **`VideoTransitionPlugin`** - Video transitions
 - **`OnlineSourcePlugin`** - Online music sources/streaming
 
+### 3. Querying VirtualDJ State
+
+The `PluginContext` provides safe access to VirtualDJ state information like track metadata, position, BPM, and cue information. This is useful for plugins that need to react to VirtualDJ events or query the current state.
+
+```rust
+use virtualdj_plugin_sdk::{PluginContext, Result};
+
+fn query_deck_info(context: &PluginContext, deck: i32) -> Result<()> {
+    // Query string values (e.g., track title)
+    let title = context.get_info_string(&format!("deck {} get_title", deck))?;
+    println!("Track: {}", title);
+    
+    // Query numeric values (e.g., playback position)
+    let position = context.get_info_double(&format!("deck {} get_position", deck))?;
+    println!("Position: {:.2}%", position * 100.0);
+    
+    // Query BPM
+    let bpm = context.get_info_double(&format!("deck {} get_bpm", deck))?;
+    println!("BPM: {:.1}", bpm);
+    
+    // Send commands to VirtualDJ
+    context.send_command(&format!("deck {} play", deck))?;
+    
+    Ok(())
+}
+```
+
+#### PluginContext Methods
+
+- **`get_info_string(command)`** - Query string values from VirtualDJ
+  - Examples: `"deck 1 get_title"`, `"get_activedeck"`, `"deck 1 cue_name 1"`
+  - Returns: `Result<String>`
+
+- **`get_info_double(command)`** - Query numeric/floating-point values
+  - Examples: `"deck 1 get_position"`, `"deck 1 get_bpm"`, `"deck 1 cue_pos 1"`
+  - Returns: `Result<f64>`
+
+- **`send_command(command)`** - Send commands to VirtualDJ
+  - Examples: `"deck 1 play"`, `"deck 2 pause"`, `"mixer master volume 50"`
+  - Returns: `Result<()>`
+
+#### Example: Monitoring Cues
+
+Here's a practical example of monitoring cues across multiple decks:
+
+```rust
+use virtualdj_plugin_sdk::PluginContext;
+
+fn monitor_deck_cues(context: &PluginContext, deck: i32) -> Result<()> {
+    let title = context.get_info_string(&format!("deck {} get_title", deck))?;
+    let position = context.get_info_double(&format!("deck {} get_position", deck))?;
+    
+    for cue_num in 1..=8 {
+        // Check if cue exists
+        let has_cue = context.get_info_string(
+            &format!("deck {} has_cue {}", deck, cue_num)
+        )?;
+        
+        if has_cue.to_lowercase() != "on" {
+            continue;
+        }
+        
+        // Get cue details
+        let cue_name = context.get_info_string(
+            &format!("deck {} cue_name {}", deck, cue_num)
+        )?;
+        let cue_pos = context.get_info_double(
+            &format!("deck {} cue_pos {}", deck, cue_num)
+        )?;
+        
+        if cue_pos >= 0.0 {
+            println!("Deck {} | Cue {}: {} ({:.2}%)", 
+                deck, cue_num, cue_name, cue_pos * 100.0);
+        }
+    }
+    
+    Ok(())
+}
+```
+
 ## Key Features
 
 ✅ **100% Rust** - Write plugins in pure Rust, no C++ needed  

@@ -5,7 +5,7 @@
 
 pub mod ffi;
 
-use std::ffi::CStr;
+use std::ffi::{CStr, CString};
 use std::fmt;
 
 /// VirtualDJ plugin error type
@@ -47,6 +47,136 @@ impl From<ffi::HRESULT> for PluginError {
 
 /// Result type for plugin operations
 pub type Result<T> = std::result::Result<T, PluginError>;
+
+/// Plugin context that provides access to VirtualDJ API functions
+/// 
+/// This struct holds the plugin pointer and callbacks, allowing safe access to
+/// VirtualDJ state information like track metadata, position, BPM, etc.
+/// 
+/// # Example
+/// 
+/// ```ignore
+/// let context = PluginContext::new(plugin_ptr, &callbacks);
+/// let title = context.get_info_string("deck 1 get_title")?;
+/// let position = context.get_info_double("deck 1 get_position")?;
+/// ```
+pub struct PluginContext {
+    plugin: *mut ffi::VdjPlugin,
+    callbacks: *const ffi::VdjCallbacks,
+}
+
+impl PluginContext {
+    /// Create a new plugin context
+    /// 
+    /// # Arguments
+    /// * `plugin` - Pointer to the VdjPlugin struct
+    /// * `callbacks` - Reference to the VdjCallbacks struct
+    /// 
+    /// # Safety
+    /// The plugin pointer must be valid and the callbacks must remain valid
+    /// for the lifetime of this context.
+    pub fn new(plugin: *mut ffi::VdjPlugin, callbacks: &ffi::VdjCallbacks) -> Self {
+        PluginContext {
+            plugin,
+            callbacks: callbacks as *const ffi::VdjCallbacks,
+        }
+    }
+
+    /// Query VirtualDJ for a double/numeric value
+    /// 
+    /// # Arguments
+    /// * `command` - The VDJ script command (e.g., "deck 1 get_position")
+    /// 
+    /// # Returns
+    /// A Result containing the numeric value, or an error if the command fails
+    pub fn get_info_double(&self, command: &str) -> Result<f64> {
+        if self.plugin.is_null() || self.callbacks.is_null() {
+            return Err(PluginError::NullPointer);
+        }
+
+        let c_command = std::ffi::CString::new(command)
+            .map_err(|_| PluginError::Fail)?;
+        
+        let mut result: f64 = 0.0;
+        
+        let hr = unsafe {
+            ((*self.callbacks).get_info)(
+                self.plugin,
+                c_command.as_ptr() as *const u8,
+                &mut result as *mut f64,
+            )
+        };
+
+        if hr == ffi::S_OK {
+            Ok(result)
+        } else {
+            Err(PluginError::from(hr))
+        }
+    }
+
+    /// Query VirtualDJ for a string value
+    /// 
+    /// # Arguments
+    /// * `command` - The VDJ script command (e.g., "deck 1 get_title")
+    /// 
+    /// # Returns
+    /// A Result containing the string value, or an error if the command fails
+    pub fn get_info_string(&self, command: &str) -> Result<String> {
+        if self.plugin.is_null() || self.callbacks.is_null() {
+            return Err(PluginError::NullPointer);
+        }
+
+        let c_command = std::ffi::CString::new(command)
+            .map_err(|_| PluginError::Fail)?;
+        
+        let mut output: [u8; 1024] = [0; 1024];
+        
+        let hr = unsafe {
+            ((*self.callbacks).get_string_info)(
+                self.plugin,
+                c_command.as_ptr() as *const u8,
+                output.as_mut_ptr(),
+                output.len() as i32,
+            )
+        };
+
+        if hr == ffi::S_OK {
+            let c_str = unsafe { CStr::from_ptr(output.as_ptr() as *const i8) };
+            Ok(c_str.to_string_lossy().into_owned())
+        } else {
+            Err(PluginError::from(hr))
+        }
+    }
+
+    /// Send a command to VirtualDJ
+    /// 
+    /// # Arguments
+    /// * `command` - The VDJ script command (e.g., "deck 1 play")
+    /// 
+    /// # Returns
+    /// Ok(()) if successful, or an error if the command fails
+    pub fn send_command(&self, command: &str) -> Result<()> {
+        if self.plugin.is_null() || self.callbacks.is_null() {
+            return Err(PluginError::NullPointer);
+        }
+
+        let c_command = std::ffi::CString::new(command)
+            .map_err(|_| PluginError::Fail)?;
+        
+        let hr = unsafe {
+            ((*self.callbacks).send_command)(
+                self.plugin,
+                c_command.as_ptr() as *const u8,
+            )
+        };
+
+        if hr == ffi::S_OK {
+            Ok(())
+        } else {
+            Err(PluginError::from(hr))
+        }
+    }
+}
 
 /// Plugin information
 #[derive(Debug, Clone)]
