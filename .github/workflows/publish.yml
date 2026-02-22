@@ -1,5 +1,8 @@
 name: Test, Build, and Publish to crates.io
 
+permissions:
+  contents: write
+
 on:
   push:
     branches:
@@ -123,19 +126,22 @@ jobs:
       - name: Verify package builds
         run: cargo build --release
 
-      - name: Publish to crates.io
-        run: cargo publish --token ${{ secrets.CARGO_REGISTRY_TOKEN }}
-        continue-on-error: true
-
-      - name: Create git tag
+      - name: Commit version bump
         run: |
-          git config user.name "GitHub Actions"
-          git config user.email "actions@github.com"
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
           git add Cargo.toml
           git commit -m "chore: bump version to ${{ steps.version.outputs.new_version }}"
           git tag "v${{ steps.version.outputs.new_version }}"
 
       - name: Push changes and tags
-        run: |
-          git push origin master --tags
+        uses: ad-m/github-push-action@master
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          branch: master
+          tags: true
+        continue-on-error: true
+
+      - name: Publish to crates.io
+        run: cargo publish --token ${{ secrets.CARGO_REGISTRY_TOKEN }} --allow-dirty
         continue-on-error: true
