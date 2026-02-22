@@ -1,0 +1,20 @@
+[package]
+name = "virtualdj-plugin-sdk"
+version = "0.1.0"
+edition = "2021"
+authors = ["VirtualDJ Plugin SDK Contributors"]
+description = "Rust bindings for the VirtualDJ Plugin SDK"
+license = "MIT OR Apache-2.0"
+
+[dependencies]
+
+[build-dependencies]
+cc = "1.0"
+
+[[example]]
+name = "simple_dsp"
+path = "examples/simple_dsp.rs"
+
+[lib]
+name = "virtualdj_plugin_sdk"
+path = "rs_core/lib.rs"
